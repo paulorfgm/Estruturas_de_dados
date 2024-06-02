@@ -12,12 +12,12 @@ typedef struct no {
     int chave;
     char cor;
     struct no *esquerda, *direita;
-    // struct no *pai; //fiz cada nó apontar para seu pai, para facilitar. 
 } No;
 
 //ASSINATURA DAS FUNÇÕES BÁSICAS DE ÁRVORE
 No *inicializaArvore();
 No *novoNo(int x);
+No *buscaPai(No *raiz, No *filho);
 void mostraArvore(No *raiz);
 
 //ASSINATURA DAS FUNÇÕES DE ROTAÇÃO
@@ -67,17 +67,16 @@ No *novoNo(int x) {
     novo->cor = rubro;
     novo->esquerda = NULL;
     novo->direita = NULL;
-    // novo->pai = NULL;
     return novo;
 }
 
-No *buscaPai(No *raiz, int x) {
+No *buscaPai(No *raiz, No *filho) {
     No *pai = NULL;
     No *atual = raiz;
 
-    while(atual != NULL && atual->chave != x) {
+    while(atual != NULL && atual != filho) {
         pai = atual;
-        if (x < atual->chave) atual = atual->esquerda;
+        if (filho->chave < atual->chave) atual = atual->esquerda;
         else atual = atual->direita;  
     }
 
@@ -102,24 +101,6 @@ No *rotacaoEsquerda(No *raiz) {
     raiz_b->esquerda = raiz;
     raiz->direita = arvore_2;
 
-    // if(raiz_b->chave < pai->chave) pai->esquerda = raiz_b;
-    // else pai->direita = raiz_b;
-
-    // // raiz_b->pai = raiz->pai;
-    // // raiz->pai = raiz_b;
-    // // if(arvore_2 != NULL) arvore_2->pai = raiz;
-
-    // No *bisavo = buscaPai(raiz, raiz->chave);
-    // char direcao = (bisavo->esquerda == raiz) ? 'e' : 'd';
-
-    // No *raiz_b = raiz->direita;
-    // No *arvore2 = raiz_b->esquerda;
-
-    // raiz_b->esquerda = raiz;
-    // raiz->direita = arvore2;
-
-    // if(direcao == 'e') bisavo->esquerda = raiz_b;
-    // else bisavo->direita = raiz_b;
     return raiz_b;
 }
 
@@ -131,11 +112,6 @@ No *rotacaoDireita(No *raiz) {
 
     raiz_b->direita = raiz;
     raiz->esquerda = arvore_2;
-
-    // raiz_b->pai = raiz->pai;
-    // raiz->pai = raiz_b;
-    // if(arvore_2 != NULL) arvore_2->pai = raiz;
-
 
     return raiz_b;
 }
@@ -172,23 +148,23 @@ bool insereRN(No **raiz, int x) {
     else {
         if (x < pai->chave) pai->esquerda = novo;
         else pai->direita = novo;
-        // novo->pai = pai;
         consertaRN(&(*raiz), &novo);
     }
     return true;
 }
 
-//Provavelmente há como melhorar este código, especialmente na parte da detecção da rotação. 
 void consertaRN(No **raiz, No **filho) {
-    No *pai = buscaPai(*raiz, (*filho)->chave);
+    No *pai = buscaPai(*raiz, *filho);
 
     if (pai == NULL) return; //Estamos na raiz, e não há nada para consertar
 
     if(((*filho)->cor = rubro) && (pai->cor == rubro)) {
         if(pai == (*raiz)) pai->cor = negro;
+
         else {
-            No *avo = buscaPai(*raiz, pai->chave);
+            No *avo = buscaPai(*raiz, pai);
             No *tio = (avo->esquerda == pai) ? avo->direita : avo->esquerda;
+
             if (tio != NULL && tio->cor == rubro) {
                 avo->cor = rubro;
                 pai->cor = negro;
@@ -196,6 +172,7 @@ void consertaRN(No **raiz, No **filho) {
                 if(avo == (*raiz)) avo->cor = negro; //A raiz sempre será negra!
                 consertaRN(&(*raiz), &avo);
             }
+
             else {
                 //Detectamos a rotação que deve ser feita, e atualizamos o ponteiro "filho":
                 if (avo->direita == pai && pai->direita == *filho) {
@@ -219,11 +196,10 @@ void consertaRN(No **raiz, No **filho) {
                     avo->cor = rubro;
                 }
 
-                //Tendo rotacionado, pegamos o pai do ponteiro filho, e checamos se "filho" é a raiz. 
-                //Se não for, então fazemos o pai do filho apontar para ele.
-                // pai = buscaPai(*raiz, (*filho)->chave);
-                pai = buscaPai(*raiz, avo->chave); 
-                // (*filho)->pai;
+                //Tendo rotacionado, pegamos o pai do ponteiro avo, e checamos se avo era a raiz antes da rotação.
+                //Se for, então filho deverá ser a nova raiz da árvore. 
+                //Se não for, então fazemos o pai do filho apontar para ele (na direção correta).
+                pai = buscaPai(*raiz, avo); 
                 if(pai == NULL) *raiz = *filho;
                 else if((*filho)->chave < pai->chave) pai->esquerda = (*filho);
                 else pai->direita = (*filho);  
